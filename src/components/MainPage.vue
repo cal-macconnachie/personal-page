@@ -34,7 +34,7 @@
   <div v-else class="main-content hide-main-content" id="mainContent" @click="showMainContent = true">
     <h1>Hiya, my name is Cal</h1>
 
-    <p>Welcome to my front page, I'm a 25 year old full stack developer who works primarily with Vue on the frontend and a mix of node/serverless and PHP on the backend. In my free time I like to paint, ski, and play tennis.</p>
+    <p>Welcome to my front page, I'm a 25 year old full stack developer who works primarily with Vue on the frontend and a mix of node/serverless and PHP on the backend. In my free time I like to paint, ski, and play tennis. I plan to add more to this in the future...</p>
     <div class="main-content-footer"><div style="padding-right: 15px;"><a class="mail-link mail-link-hidden" id="mailLink" href="mailto:cal.macconnachie@gmail.com" target="_blank"><n-icon class="icon"><mail-icon/></n-icon></a></div></div>
   </div>
   <div class="container" ref="canvas"/>
