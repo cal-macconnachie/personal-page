@@ -218,7 +218,7 @@ export default {
         }
         this.cubeDirections[cube.uuid] = {
           x: (Math.random() * speedLimit) * (Math.random() < 0.5 ? -1 : 1),
-          y: (Math.random() * speedLimit) * (Math.random() < 0.5 ? -1 : 1),
+          y: (Math.random() * speedLimit) * (Math.random() < 0.5 ? -1 : 1)
         }
         this.origionalCubeDirections[cube.uuid] = {
           x: this.cubeDirections[cube.uuid].x,
