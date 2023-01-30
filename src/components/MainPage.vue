@@ -32,9 +32,26 @@
     <div class="main-content-footer"><div style="padding-right: 15px;"><a class="mail-link mail-link-hidden" id="mailLink" href="mailto:cal.macconnachie@gmail.com" target="_blank"><n-icon><mail-icon/></n-icon></a></div></div>
   </div>
   <div v-else class="main-content hide-main-content" id="mainContent" @click="showMainContent = true">
-    <h1>Hiya, my name is Cal</h1>
+    <h1 v-if="!playSnake" style="background: none">Hiya, my name is Cal</h1>
 
-    <p>Welcome to my front page, I'm a 25 year old full stack developer who works primarily with Vue on the frontend and a mix of node/serverless and PHP on the backend. In my free time I like to paint, ski, and play tennis. I plan to add more to this in the future... maybe...</p>
+    <p v-if="!playSnake" style="background: none">Welcome to my front page, I'm a 25 year old full stack developer who works primarily with Vue on the frontend and a mix of node/serverless and PHP on the backend. In my free time I like to paint, ski, and play tennis. I plan to add more to this in the future... maybe...</p>
+    <div v-if="!playSnake" class="play-button-container">
+      <n-button strong round style="color: #ECE2D0" @click="startSnakeGame">
+      Start Snake
+      </n-button>
+    </div>
+    <div v-if="playSnake" class="snake-score">Score: {{score}}</div>
+    <div class="game-over-screen" ref="gameOverScreen">
+      <div class="game-over-text">Game Over</div>
+      <div class="game-over-text">Score: {{score}}</div>
+      <div class="game-over-text">High Score: {{highScore}}</div>
+      <div class="play-button-container">
+        <n-button strong round style="color: #ECE2D0" @click="restartSnakeGame">
+        Play Again?
+        </n-button>
+      </div>
+    </div>
+    <div class="game-container" ref="gameContainer" id="gameContainer"></div>
     <div class="main-content-footer"><div style="padding-right: 15px;"><a class="mail-link mail-link-hidden" id="mailLink" href="mailto:cal.macconnachie@gmail.com" target="_blank"><n-icon class="icon"><mail-icon/></n-icon></a></div></div>
   </div>
   <div class="container" ref="canvas"/>
@@ -68,6 +85,20 @@ export default {
       boxControlls: true,
       palletteNumber: 127,
       fullScreen: false,
+      direction: 'up',
+      playSnake: false,
+      gameOverFlag: false,
+      score: 0,
+      highScore: 0,
+      frameCounter: 0,
+      difficulty: 0.35,
+      cameraSpeed: 1,
+      keyStates: {
+        w: false,
+        a: false,
+        s: false,
+        d: false
+      },
       handlers: {
         mousedown: () => {
           this.dragging = true
@@ -297,6 +328,204 @@ export default {
       }
       this.createCubes(this.cubeAmount)
     },
+    startSnakeGame () {
+      this.playSnake = true
+      this.initGame()
+    },
+    initGame() {
+      this.gameContainer = this.$refs.gameContainer
+      this.gameScene = new THREE.Scene()
+      this.gameScene.background = new THREE.Color(0x353431)
+      // main-content width
+      const mainContentWidth = document.getElementById('mainContent').offsetWidth
+      const mainContentHeight = document.getElementById('mainContent').offsetHeight
+      // this.gameCamera = new THREE.OrthographicCamera(mainContentWidth / -2, mainContentWidth / 2, mainContentHeight / 2, mainContentHeight / -2, 0.1, 100)
+      const aspect = mainContentWidth / mainContentHeight
+      this.usableWidth = 25 * aspect
+      this.gameCamera = new THREE.OrthographicCamera(-this.usableWidth, this.usableWidth, 25, -25, 0.1, 100)
+      this.gameCamera.position.set(0, 0, 100)
+      this.gameCamera.up.set( 0, 0, 1 )
+      this.gameRenderer = new THREE.WebGLRenderer({ antialias: true })
+      this.gameRenderer.setSize(mainContentWidth, mainContentHeight - 25)
+      this.gameContainer.appendChild(this.gameRenderer.domElement)
+
+
+      this.gameLight = new THREE.DirectionalLight( 0xECE2D0, 1 )
+      this.gameLight.position.set( 0.5, 0, 100 )
+      this.gameLight.target = new THREE.Object3D(0, 0, 0)
+      this.gameScene.add(this.gameLight)
+      this.renderer.render(this.gameScene, this.gameCamera)
+      this.setupGame()
+      this.setupKeyboardListeners()
+      this.animateGame()
+    },
+    restartSnakeGame () {
+      this.playSnake = true
+      this.gameOverFlag = false
+      this.score = 0
+      this.$refs.gameOverScreen.style.display = 'none'
+      this.setupGame()
+    },
+    setupGame () {
+      const geometry = new THREE.BoxGeometry(1, 1, 1)
+      const material = new THREE.MeshPhongMaterial({ color: this.generatePastelColour() })
+      this.head = new THREE.Mesh(geometry, material)
+      this.head.position.set(0, 0, 9)
+      this.gameScene.add(this.head)
+      this.tail = []
+      this.addNewSnakeSegment('#353431')
+    },
+    setupKeyboardListeners () {
+      window.addEventListener('keydown', (event) => {
+        if (event.key === 'ArrowUp') {
+          if (this.direction === 'down') {
+            return
+          }
+          this.direction = 'up'
+        } else if (event.key === 'ArrowDown') {
+          if (this.direction === 'up') {
+            return
+          }
+          this.direction = 'down'
+        } else if (event.key === 'ArrowLeft') {
+          if (this.direction === 'right') {
+            return
+          }
+          this.direction = 'left'
+        } else if (event.key === 'ArrowRight') {
+          if (this.direction === 'left') {
+            return
+          }
+          this.direction = 'right'
+        } else if (event.key === 'w') {
+          this.keyStates.w = true
+        } else if (event.key === 'a') {
+          this.keyStates.a = true
+        } else if (event.key === 's') {
+          this.keyStates.s = true
+        } else if (event.key === 'd') {
+          this.keyStates.d = true
+        }
+      })
+      window.addEventListener('keyup', (event) => {
+        if (event.key === 'w') {
+          this.keyStates.w = false
+        } else if (event.key === 'a') {
+          this.keyStates.a = false
+        } else if (event.key === 's') {
+          this.keyStates.s = false
+        } else if (event.key === 'd') {
+          this.keyStates.d = false
+        }
+      })
+    },
+    createFoodPellet () {
+      const geometry = new THREE.BoxGeometry(1, 1, 1)
+      const material = new THREE.MeshPhongMaterial({ color: this.generatePastelColour() })
+      this.pellet = new THREE.Mesh(geometry, material)
+      const mainContentWidth = 25
+      const y = Math.floor(Math.random() * mainContentWidth) - mainContentWidth / 2
+      const x = Math.floor(Math.random() * this.usableWidth) - this.usableWidth / 2
+      this.pellet.position.set(x, y, 9)
+      this.gameScene.add(this.pellet)
+    },
+    addNewSnakeSegment (color = '#A26769') {
+      const geometry = new THREE.BoxGeometry(1, 1, 1)
+      const material = new THREE.MeshPhongMaterial({ color })
+      const newSegment = new THREE.Mesh(geometry, material)
+      this.tail.push(newSegment)
+      this.gameScene.add(this.tail[this.tail.length - 1])
+    },
+    moveSnake () {
+      if (this.direction === 'up') {
+        this.head.position.y += this.difficulty
+      } else if (this.direction === 'down') {
+        this.head.position.y -= this.difficulty
+      } else if (this.direction === 'left') {
+        this.head.position.x -= this.difficulty
+      } else if (this.direction === 'right') {
+        this.head.position.x += this.difficulty
+      }
+      for (let i = this.tail.length - 1; i >= 1; i--) {
+        let newPos = new THREE.Vector2(this.tail[i - 1].position.x, this.tail[i - 1].position.y)
+        this.tail[i].position.x = newPos.x
+        this.tail[i].position.y = newPos.y
+      }
+      this.tail[0].position.x = this.head.position.x
+      this.tail[0].position.y = this.head.position.y
+      
+      // loop player back to other side of screen
+      const mainContentWidth = this.usableWidth
+      const mainContentHeight = 25
+      if (this.head.position.x > mainContentWidth) {
+        this.head.position.x = -mainContentWidth
+      } else if (this.head.position.x < -mainContentWidth) {
+        this.head.position.x = mainContentWidth
+      } else if (this.head.position.y > mainContentHeight) {
+        this.head.position.y = -mainContentHeight
+      } else if (this.head.position.y < -mainContentHeight) {
+        this.head.position.y = mainContentHeight
+      }
+    },
+    checkForCollision () {
+      if (this.tail.length <= 15) {
+        return
+      }
+      for (let i = 15; i < this.tail.length; i++) {
+        const segment = this.tail[i]
+        const acceptableDistance = 0.5
+        if (Math.abs(this.head.position.x - segment.position.x) < acceptableDistance && Math.abs(this.head.position.y - segment.position.y) < acceptableDistance) {
+          this.gameOver()
+        }
+      }
+    },
+    gameOver () {
+      this.gameOverFlag = true
+      this.$refs.gameOverScreen.style.display = 'flex'
+      this.gameScene.remove(this.head)
+      this.head = null
+      this.tail.forEach((segment) => {
+        this.gameScene.remove(segment)
+      })
+      this.tail = []
+      this.gameScene.remove(this.pellet)
+      this.pellet = null
+      this.direction = 'up'
+    },
+    animateGame () {
+      requestAnimationFrame(this.animateGame)
+      if (!this.pellet && !this.gameOverFlag) {
+        this.createFoodPellet()
+      }
+      this.checkForCollision()
+      if (!this.gameOverFlag) {
+        this.moveSnake()
+        const acceptableDistance = 1
+        if (Math.abs(this.head.position.x - this.pellet.position.x) < acceptableDistance && Math.abs(this.head.position.y - this.pellet.position.y) < acceptableDistance) {
+          this.pelletColor = this.pellet.material.color.getHex()
+          this.gameScene.remove(this.pellet)
+          this.pellet = null
+          this.score += 1
+        }
+      }
+      // this.moveCamera()
+      this.gameRenderer.render(this.gameScene, this.gameCamera)
+    },
+    moveCamera () {
+      // sphere formual x^2 + y^2 + z^2 = r^2 where r is 100
+      if (this.keyStates.w) {
+        this.gameCamera.position.y -= 0.1
+      } else if (this.keyStates.s) {
+        this.gameCamera.position.y += 0.1
+      }
+      if (this.keyStates.a) {
+        this.gameCamera.position.x -= 0.1
+      } else if (this.keyStates.d) {
+        this.gameCamera.position.x += 0.1
+      }
+      this.gameCamera.position.z = Math.sqrt(10000 - (this.gameCamera.position.x * this.gameCamera.position.x) - (this.gameCamera.position.y * this.gameCamera.position.y))
+      this.gameCamera.lookAt(0, 0, 0)
+    },
     onWindowResize() {
       this.camera.aspect = window.innerWidth / window.innerHeight
       this.camera.updateProjectionMatrix()
@@ -384,6 +613,16 @@ export default {
         document.querySelector('#mailLink').classList.remove('mail-link-visible')
         document.querySelector('#mailLink').classList.add('mail-link-hidden')
       }
+    },
+    score() {
+      if (this.gameOverFlag) {
+        return
+      }
+      if (this.score > this.highScore) {
+        this.highScore = this.score
+      }
+      // add to snake
+      this.addNewSnakeSegment(this.pelletColor)
     }
   }
 }
@@ -397,6 +636,23 @@ export default {
   display: block;
   margin: 0;
   padding: 0;
+}
+.game-conatiner{
+  width: 100%;
+  height: 500px;
+  display: block;
+  margin: 15rem;
+  padding: 15rem;
+  background-color: aqua;
+}
+.snake-score {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 100;
+  color: white;
+  font-size: 2rem;
+  padding: 1rem;
 }
 .welcome-text {
   position: absolute;
@@ -464,7 +720,7 @@ export default {
 }
 .main-content {
   position: absolute;
-  background-color: rgba(53, 52, 49, 1);
+  background-color: #353431;
   border-radius: 10px;
   top: 10px;
   left: 50%;
@@ -542,11 +798,24 @@ export default {
   transition: all 0.5s ease-in-out;
 }
 .mail-link-hidden {
-  color: rgba(53, 52, 49, 1);
+  color: #353431;
   pointer-events: none;
 
 }
 .mail-link-visible {
   color: #ECE2D0;
+}
+.game-over-screen {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 100;
+  background-color: rgba(53, 52, 49, 0.7);
+  display: none;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
 }
 </style>
