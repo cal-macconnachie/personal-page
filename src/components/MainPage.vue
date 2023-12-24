@@ -40,7 +40,7 @@
       Start Snake
       </n-button>
     </div>
-    <div v-if="playSnake" class="snake-score">Score: {{score}} <n-button strong round style="color: #ECE2D0" @click="playSnake = false">Stop</n-button></div>
+    <div v-if="playSnake" class="snake-score">Score: {{score}} <n-button strong round style="color: #ECE2D0"</div>
     <div class="game-over-screen" ref="gameOverScreen">
       <div class="game-over-text">Game Over</div>
       <div class="game-over-text">Score: {{score}}</div>
