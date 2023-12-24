@@ -34,7 +34,7 @@
   <div v-else class="main-content hide-main-content" id="mainContent" @click="showMainContent = true">
     <h1 v-if="!playSnake" style="background: none">Hiya, my name is Cal</h1>
 
-    <p v-if="!playSnake" style="background: none">Welcome to my front page, I'm a 25 year old full stack developer who works primarily with Vue on the frontend and a mix of node/serverless and PHP on the backend. In my free time I like to paint, ski, and play tennis. I plan to add more to this in the future... maybe...</p>
+    <p v-if="!playSnake" style="background: none">Welcome to my front page, I'm a full stack developer who works primarily with Vue on the frontend and a mix of node/serverless and PHP on the backend. In my free time I like to paint, ski, and play tennis. I plan to add more to this in the future... maybe...</p>
     <div v-if="!playSnake" class="play-button-container">
       <n-button strong round style="color: #ECE2D0" @click="startSnakeGame">
       Start Snake
